@@ -1374,7 +1374,151 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-// 全局暴露
+// 全局暴露所有需要的方法
+window.switchPage = function(page) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === page);
+  });
+
+  if (page !== 'home') {
+    showModal(page);
+  }
+};
+
+window.closeModal = function() {
+  document.getElementById('modal').classList.remove('active');
+  document.getElementById('modalOverlay').classList.remove('active');
+};
+
 window.navigateTo = function(page) {
   showModal(page);
+};
+
+window.saveStructure = function(e) {
+  e.preventDefault();
+
+  const income = parseFloat(document.getElementById('inputIncome').value) || 0;
+  const savingsRatio = parseFloat(document.getElementById('inputSavings').value);
+  const emergencyRatio = parseFloat(document.getElementById('inputEmergency').value);
+  const totalRatio = savingsRatio + emergencyRatio;
+
+  if (income < 0) {
+    showToast('收入不能为负数！', 'warning');
+    return;
+  }
+
+  if (savingsRatio < 0 || savingsRatio > 1) {
+    showToast('储蓄比例必须在0-100%之间！', 'warning');
+    return;
+  }
+
+  if (emergencyRatio < 0 || emergencyRatio > 1) {
+    showToast('应急比例必须在0-100%之间！', 'warning');
+    return;
+  }
+
+  if (totalRatio > 1) {
+    showToast(`比例合计 ${(totalRatio * 100).toFixed(0)}% 超过100%，请调整！`, 'warning');
+    return;
+  }
+
+  StorageService.setIncome(income);
+  StorageService.setSavingsRatio(savingsRatio);
+  StorageService.setEmergencyRatio(emergencyRatio);
+
+  layerConfig = { income, savingsRatio, emergencyRatio };
+
+  closeModal();
+  render();
+
+  if (income > 0) {
+    showResultPopup();
+  } else {
+    showToast('保存成功');
+  }
+};
+
+window.addExpense = function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('expenseName').value.trim();
+  const amount = parseFloat(document.getElementById('expenseAmount').value);
+  const category = document.getElementById('expenseCategory').value;
+
+  if (!name || !amount) return;
+
+  const expense = {
+    id: generateId(),
+    name,
+    amount,
+    category,
+    isFixed: true,
+    month: getCurrentMonth()
+  };
+
+  StorageService.addExpense(expense);
+
+  document.getElementById('expenseName').value = '';
+  document.getElementById('expenseAmount').value = '';
+
+  const modalContent = document.getElementById('modalContent');
+  const body = modalContent.querySelector('.modal-body');
+  body.innerHTML = renderExpensesPage() + `
+    <div class="expenses-list" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+      <h4 style="font-size: 14px; color: var(--secondary); margin-bottom: 12px;">本月支出</h4>
+      ${StorageService.getCurrentMonthExpenses().map(e => {
+        const cat = ExpenseCategory.get(e.category);
+        return `
+          <div class="expense-item">
+            <div class="expense-icon" style="background: ${cat.color}">${cat.icon}</div>
+            <div class="expense-info">
+              <div class="expense-name">${e.name}</div>
+              <div class="expense-category">${cat.name}</div>
+            </div>
+            <span style="color: var(--secondary); font-size: 13px;">${formatCurrency(e.amount)}</span>
+            <button onclick="deleteExpense('${e.id}')" style="background: none; border: none; color: var(--danger); cursor: pointer; margin-left: 8px;">×</button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  render();
+  showToast('添加成功');
+};
+
+window.deleteExpense = function(id) {
+  StorageService.deleteExpense(id);
+
+  const modalContent = document.getElementById('modalContent');
+  const body = modalContent.querySelector('.modal-body');
+  const expenses = StorageService.getCurrentMonthExpenses();
+
+  body.querySelector('.expenses-list').innerHTML = `
+    <h4 style="font-size: 14px; color: var(--secondary); margin-bottom: 12px;">本月支出</h4>
+    ${expenses.length === 0
+      ? '<p class="empty-tip">暂无支出</p>'
+      : expenses.map(e => {
+          const cat = ExpenseCategory.get(e.category);
+          return `
+            <div class="expense-item">
+              <div class="expense-icon" style="background: ${cat.color}">${cat.icon}</div>
+              <div class="expense-info">
+                <div class="expense-name">${e.name}</div>
+                <div class="expense-category">${cat.name}</div>
+              </div>
+              <span style="color: var(--secondary); font-size: 13px;">${formatCurrency(e.amount)}</span>
+              <button onclick="deleteExpense('${e.id}')" style="background: none; border: none; color: var(--danger); cursor: pointer; margin-left: 8px;">×</button>
+            </div>
+          `;
+        }).join('')
+    }
+  `;
+
+  render();
+  showToast('已删除');
+};
+
+window.showResultPopup = function() {
+  // 这个函数已经在上面定义了
 };
