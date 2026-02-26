@@ -712,6 +712,80 @@ body {
   font-size: 14px;
   color: var(--secondary);
   line-height: 1.6;
+
+/* 警告框样式 */
+.warning-box {
+  background: var(--gray-light);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.warning-box.danger {
+  background: linear-gradient(135deg, #FFE4E4 0%, #FFF5F5 100%);
+  border: 1px solid var(--danger);
+}
+
+.warning-box.warning {
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFFBEB 100%);
+  border: 1px solid var(--warning);
+}
+
+.warning-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--primary);
+}
+
+.warning-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+
+.warning-row:last-child {
+  border-bottom: none;
+}
+
+.warning-row span:first-child {
+  color: var(--secondary);
+}
+
+.warning-row span:last-child {
+  font-weight: 600;
+}
+
+.warning-row span.danger {
+  color: var(--danger);
+}
+
+.warning-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--danger);
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.warning-alert.warning {
+  background: var(--warning);
+  color: #333;
+}
+
+.result-subtitle {
+  font-size: 14px;
+  color: var(--secondary);
+  margin-top: -8px;
+  margin-bottom: 20px;
+}
   margin: 0;
 }
 
@@ -1290,4 +1364,45 @@ body {
   justify-content: space-between;
   font-size: 12px;
   color: var(--secondary);
+}
+
+/* 比例警告样式 */
+.ratio-warning {
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFFBEB 100%);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  color: #B45309;
+  font-size: 14px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 高亮显示的详情项 */
+.detail-item.highlight {
+  background: linear-gradient(135deg, var(--gold), #FFA500);
+}
+
+.detail-item.highlight .detail-label {
+  color: #333;
+}
+
+.detail-item.highlight .detail-value {
+  color: #333;
+  font-weight: 700;
+}
+
+/* 危险文字颜色 */
+.danger-text {
+  color: var(--danger) !important;
+}
+
+.warning-text {
+  color: var(--warning) !important;
 }

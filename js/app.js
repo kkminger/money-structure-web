@@ -158,31 +158,61 @@ function evaluateStructure() {
   const expenses = StorageService.getCurrentMonthExpenses();
   const totalFixed = expenses.reduce((sum, e) => sum + e.amount, 0);
   const livingAmount = income * (1 - layerConfig.savingsRatio - layerConfig.emergencyRatio);
-  
-  if (income <= 0) return { score: 0, level: 'none', msg: '请先设置收入', icon: '❓' };
-  
+  const savingsAndEmergencyRatio = layerConfig.savingsRatio + layerConfig.emergencyRatio;
+  const livingRatio = livingAmount / income;
+
+  if (income <= 0) {
+    return {
+      score: 0,
+      level: 'none',
+      msg: '请先设置收入',
+      icon: '❓',
+      income: 0,
+      totalFixed: 0,
+      expensePercent: 0,
+      exceedLiving: false,
+      savingsRatio: layerConfig.savingsRatio,
+      emergencyRatio: layerConfig.emergencyRatio,
+      livingRatio: 0,
+      savingsAndEmergencyRatio: 0,
+      livingAmount: 0
+    };
+  }
+
+  // 状态判断逻辑（根据用户需求）
+  let status;
+  if (totalFixed > livingAmount) {
+    // IF 固定支出 > 生活层可支配 → ⚠ 被挤压
+    status = 'danger';
+  } else if (savingsAndEmergencyRatio > 0.8) {
+    // ELSE IF 储蓄比例+应急比例 > 80% → ⚠ 过高
+    status = 'warning';
+  } else {
+    // ELSE → ✅ 可执行
+    status = 'good';
+  }
+
   // 计算分数
   let score = 100;
-  
+
   // 储蓄层得分（0-30分）
   score -= Math.max(0, (0.2 - layerConfig.savingsRatio) * 100);
-  
+
   // 应急层得分（0-25分）
   score -= Math.max(0, (0.15 - layerConfig.emergencyRatio) * 80);
-  
+
   // 生活空间得分（0-30分）
-  const livingRatio = (livingAmount / income) * 100;
-  if (livingRatio < 30) score -= 30;
-  else if (livingRatio < 40) score -= 15;
-  else if (livingRatio < 50) score -= 5;
-  
+  if (livingRatio < 0.3) score -= 30;
+  else if (livingRatio < 0.4) score -= 15;
+  else if (livingRatio < 0.5) score -= 5;
+
   // 固定支出占比得分（0-15分）
   const expenseRatio = totalFixed / income;
   if (expenseRatio > 0.7) score -= 15;
   else if (expenseRatio > 0.5) score -= 8;
-  
+
   score = Math.max(0, Math.min(100, Math.round(score)));
-  
+
   // 确定等级和消息
   let level, messages;
   if (score >= 90) {
@@ -198,12 +228,22 @@ function evaluateStructure() {
     level = 'danger';
     messages = MockeryMessages.danger;
   }
-  
+
   return {
     score,
     level,
     msg: messages[Math.floor(Math.random() * messages.length)],
-    icon: level === 'excellent' ? '🏆' : level === 'good' ? '✨' : level === 'warning' ? '⚠️' : '💀'
+    icon: level === 'excellent' ? '🏆' : level === 'good' ? '✨' : level === 'warning' ? '⚠️' : '💀',
+    // 详细信息
+    income,
+    totalFixed,
+    expensePercent: Math.round(expenseRatio * 100),
+    exceedLiving: totalFixed > livingAmount,
+    savingsRatio: layerConfig.savingsRatio,
+    emergencyRatio: layerConfig.emergencyRatio,
+    livingRatio: livingRatio,
+    savingsAndEmergencyRatio,
+    livingAmount
   };
 }
 
@@ -214,7 +254,7 @@ function evaluateStructure() {
 function showResultPopup() {
   const eval = evaluateStructure();
   const card = document.getElementById('statusCard');
-  
+
   // 添加震动效果
   if (eval.level === 'danger') {
     card.style.animation = 'shake 0.5s ease';
@@ -223,23 +263,61 @@ function showResultPopup() {
     card.style.animation = 'bounce 0.6s ease';
     setTimeout(() => card.style.animation = '', 600);
   }
-  
+
   // 弹出结果弹窗
   const modal = document.getElementById('modal');
   const content = document.getElementById('modalContent');
-  
+
   // 根据等级选择样式
-  const themeClass = eval.level === 'danger' ? 'danger' : 
-                     eval.level === 'warning' ? 'warning' : 
+  const themeClass = eval.level === 'danger' ? 'danger' :
+                     eval.level === 'warning' ? 'warning' :
                      eval.level === 'excellent' ? 'excellent' : 'good';
-  
+
+  // 根据状态判断显示标题
+  let statusTitle, statusDesc;
+  if (eval.exceedLiving) {
+    statusTitle = '⚠️ 结构被挤压';
+    statusDesc = '固定支出超过生活层可支配金额';
+  } else if (eval.savingsAndEmergencyRatio > 0.8) {
+    statusTitle = '⚠️ 结构过高';
+    statusDesc = `储蓄+应急比例 ${(eval.savingsAndEmergencyRatio * 100).toFixed(0)}% 过高`;
+  } else {
+    statusTitle = '✅ 结构可执行';
+    statusDesc = '固定支出未挤压生活层';
+  }
+
+  // 固定支出警告信息
+  let expenseWarning = '';
+  if (eval.totalFixed > 0) {
+    const isOver = eval.exceedLiving;
+    const isClose = eval.totalFixed > eval.livingAmount * 0.8;
+    expenseWarning = `
+      <div class="warning-box ${isOver ? 'danger' : isClose ? 'warning' : ''}">
+        <div class="warning-title">📊 固定支出分析</div>
+        <div class="warning-row">
+          <span>固定支出合计</span>
+          <span>${formatCurrency(eval.totalFixed)}</span>
+        </div>
+        <div class="warning-row">
+          <span>占收入比例</span>
+          <span class="${eval.expensePercent > 70 ? 'danger' : ''}">${eval.expensePercent}%</span>
+        </div>
+        <div class="warning-row">
+          <span>生活层可支配</span>
+          <span>${formatCurrency(eval.livingAmount)}</span>
+        </div>
+        ${isOver ? `<div class="warning-alert">🔴 超过生活层 ${formatCurrency(eval.totalFixed - eval.livingAmount)}</div>` : ''}
+        ${isClose && !isOver ? `<div class="warning-alert warning">⚠️ 接近警戒线</div>` : ''}
+      </div>
+    `;
+  }
+
   content.innerHTML = `
     <div class="result-popup ${themeClass}">
       <div class="result-icon">${eval.icon}</div>
-      <h2 class="result-title">${eval.level === 'danger' ? '结构分析' : 
-                                  eval.level === 'warning' ? '结构预警' :
-                                  eval.level === 'excellent' ? '太优秀了！' : '还不错'}</h2>
-      
+      <h2 class="result-title">${statusTitle}</h2>
+      <p class="result-subtitle">${statusDesc}</p>
+
       <div class="result-score">
         <div class="score-circle">
           <svg viewBox="0 0 100 100">
@@ -251,46 +329,54 @@ function showResultPopup() {
         </div>
         <span class="score-label">结构健康分</span>
       </div>
-      
+
       <p class="result-message">${eval.msg}</p>
-      
+
       <div class="result-details">
         <div class="detail-item">
           <span class="detail-label">储蓄层</span>
           <span class="detail-value ${layerConfig.savingsRatio < 0.1 ? 'danger' : ''}">
-            ${(layerConfig.savingsRatio * 100).toFixed(0)}%
+            ${(eval.savingsRatio * 100).toFixed(0)}%
           </span>
         </div>
         <div class="detail-item">
           <span class="detail-label">应急层</span>
           <span class="detail-value ${layerConfig.emergencyRatio < 0.1 ? 'warning' : ''}">
-            ${(layerConfig.emergencyRatio * 100).toFixed(0)}%
+            ${(eval.emergencyRatio * 100).toFixed(0)}%
           </span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">生活空间</span>
+          <span class="detail-label">生活层</span>
           <span class="detail-value">
-            ${((1 - layerConfig.savingsRatio - layerConfig.emergencyRatio) * 100).toFixed(0)}%
+            ${(eval.livingRatio * 100).toFixed(0)}%
+          </span>
+        </div>
+        <div class="detail-item highlight">
+          <span class="detail-label">储蓄+应急</span>
+          <span class="detail-value ${eval.savingsAndEmergencyRatio > 0.8 ? 'warning' : ''}">
+            ${(eval.savingsAndEmergencyRatio * 100).toFixed(0)}%
           </span>
         </div>
       </div>
-      
+
+      ${expenseWarning}
+
       <div class="quote-of-day">
         <span class="quote-icon">💡</span>
         <p>${getTimeBasedQuote()}</p>
       </div>
-      
+
       <button class="btn-primary btn-full" onclick="closeModal()">
-        ${eval.level === 'excellent' ? '继续保持！💪' : 
-          eval.level === 'good' ? '我会更好的！🎯' : 
+        ${eval.level === 'excellent' ? '继续保持！💪' :
+          eval.level === 'good' ? '谢谢认可！🎯' :
           '让我调整一下 🔧'}
       </button>
     </div>
   `;
-  
+
   modal.classList.add('active');
   document.getElementById('modalOverlay').classList.add('active');
-  
+
   // 触发庆祝效果
   if (eval.level === 'excellent') {
     confettiEffect();
@@ -400,24 +486,45 @@ function renderStatusCard() {
   const expenses = StorageService.getCurrentMonthExpenses();
   const totalFixed = expenses.reduce((sum, e) => sum + e.amount, 0);
   const livingAmount = income * (1 - layerConfig.savingsRatio - layerConfig.emergencyRatio);
+  const savingsAndEmergencyRatio = layerConfig.savingsRatio + layerConfig.emergencyRatio;
 
   let type = StatusType.NONE;
   let title = '未设置';
   let desc = '点击设置分层';
+  let statusDetail = '';
 
   if (income > 0) {
+    // 逻辑判断：根据需求
     if (totalFixed > livingAmount) {
+      // IF 固定支出 > 生活层可支配 → ⚠ 被挤压
       type = StatusType.ALERT;
-      title = '结构预警';
-      desc = '点击查看详情';
-    } else if (totalFixed > livingAmount * 0.8) {
+      title = '结构被挤压';
+      const exceedAmount = formatCurrency(totalFixed - livingAmount);
+      statusDetail = `固定支出超过生活层 ${exceedAmount}`;
+      desc = '点击调整结构';
+    } else if (savingsAndEmergencyRatio > 0.8) {
+      // ELSE IF 储蓄比例+应急比例 > 80% → ⚠ 过高
       type = StatusType.WARNING;
-      title = '注意结构';
+      title = '结构过高';
+      const ratioPercent = (savingsAndEmergencyRatio * 100).toFixed(0);
+      statusDetail = `储蓄+应急比例 ${ratioPercent}% 过高`;
       desc = '点击查看详情';
     } else {
+      // ELSE → ✅ 可执行
       type = StatusType.GOOD;
-      title = '结构健康';
+      title = '结构可执行';
       desc = '点击查看评分';
+    }
+
+    // 添加固定支出预警信息
+    const expensePercent = ((totalFixed / income) * 100).toFixed(0);
+    if (totalFixed > 0) {
+      statusDetail = `固定支出 ${formatCurrency(totalFixed)} (占收入${expensePercent}%)`;
+      if (totalFixed > livingAmount) {
+        statusDetail += ' | ⚠️ 超过生活层';
+      } else if (totalFixed > livingAmount * 0.8) {
+        statusDetail += ' | ⚠️ 接近警戒';
+      }
     }
   }
 
@@ -450,6 +557,9 @@ function renderStatusCard() {
     }
   };
   card.style.cursor = 'pointer';
+
+  // 保存状态详情供弹窗使用
+  card.dataset.statusDetail = statusDetail || '';
 }
 
 // 渲染结构概览
@@ -742,7 +852,9 @@ function updateStructureCalc() {
   const savingsRatio = parseFloat(document.getElementById('inputSavings').value);
   const emergencyRatio = parseFloat(document.getElementById('inputEmergency').value);
   const livingRatio = 1 - savingsRatio - emergencyRatio;
+  const totalRatio = savingsRatio + emergencyRatio;
 
+  // 验证并更新显示
   document.getElementById('savingsDisplay').textContent = (savingsRatio * 100).toFixed(0) + '%';
   document.getElementById('emergencyDisplay').textContent = (emergencyRatio * 100).toFixed(0) + '%';
   document.getElementById('livingDisplay').textContent = (livingRatio * 100).toFixed(0) + '%';
@@ -750,6 +862,47 @@ function updateStructureCalc() {
   document.getElementById('calcSavings').textContent = '¥' + formatCurrency(income * savingsRatio);
   document.getElementById('calcEmergency').textContent = '¥' + formatCurrency(income * emergencyRatio);
   document.getElementById('calcLiving').textContent = '¥' + formatCurrency(income * livingRatio);
+
+  // 实时验证提示
+  const livingPercentEl = document.getElementById('livingDisplay').parentElement;
+  const livingRowEl = document.getElementById('calcLiving').parentElement;
+
+  if (totalRatio > 1) {
+    livingPercentEl.style.color = 'var(--danger)';
+    document.getElementById('livingDisplay').textContent = '⚠️ ' + (livingRatio * 100).toFixed(0) + '% (超限)';
+  } else if (livingRatio < 0) {
+    livingPercentEl.style.color = 'var(--warning)';
+    document.getElementById('livingDisplay').textContent = '0% (已超限)';
+  } else {
+    livingPercentEl.style.color = '';
+  }
+
+  // 如果总和超过80%，给出警告
+  if (totalRatio > 0.8 && totalRatio <= 1) {
+    showRatioWarning(true);
+  } else {
+    showRatioWarning(false);
+  }
+}
+
+// 显示比例警告
+let ratioWarningTimeout;
+function showRatioWarning(show) {
+  clearTimeout(ratioWarningTimeout);
+  const existingWarning = document.getElementById('ratioWarning');
+
+  if (show && !existingWarning) {
+    const calcResult = document.querySelector('.calc-result');
+    if (calcResult) {
+      const warning = document.createElement('div');
+      warning.id = 'ratioWarning';
+      warning.className = 'ratio-warning';
+      warning.innerHTML = '⚠️ 储蓄+应急比例超过80%，生活层空间紧张';
+      calcResult.appendChild(warning);
+    }
+  } else if (!show && existingWarning) {
+    existingWarning.remove();
+  }
 }
 
 // 保存结构
@@ -759,6 +912,28 @@ function saveStructure(e) {
   const income = parseFloat(document.getElementById('inputIncome').value) || 0;
   const savingsRatio = parseFloat(document.getElementById('inputSavings').value);
   const emergencyRatio = parseFloat(document.getElementById('inputEmergency').value);
+  const totalRatio = savingsRatio + emergencyRatio;
+
+  // 验证规则
+  if (income < 0) {
+    showToast('收入不能为负数！', 'warning');
+    return;
+  }
+
+  if (savingsRatio < 0 || savingsRatio > 1) {
+    showToast('储蓄比例必须在0-100%之间！', 'warning');
+    return;
+  }
+
+  if (emergencyRatio < 0 || emergencyRatio > 1) {
+    showToast('应急比例必须在0-100%之间！', 'warning');
+    return;
+  }
+
+  if (totalRatio > 1) {
+    showToast(`比例合计 ${(totalRatio * 100).toFixed(0)}% 超过100%，请调整！`, 'warning');
+    return;
+  }
 
   StorageService.setIncome(income);
   StorageService.setSavingsRatio(savingsRatio);
