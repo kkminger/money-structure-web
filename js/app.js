@@ -768,7 +768,13 @@ function saveStructure(e) {
 
   closeModal();
   render();
-  showToast('保存成功');
+
+  // 显示结果评价弹窗
+  if (income > 0) {
+    showResultPopup();
+  } else {
+    showToast('保存成功');
+  }
 }
 
 // 渲染支出页面
