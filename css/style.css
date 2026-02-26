@@ -28,7 +28,7 @@ body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  padding-bottom: 80px;
+  padding-bottom: 90px;
 }
 
 /* Header */
@@ -61,6 +61,7 @@ body {
 /* Main */
 .main {
   padding: 16px;
+  padding-bottom: 90px; /* 为底部导航栏留出空间 */
 }
 
 /* Card */
@@ -383,7 +384,9 @@ body {
   display: flex;
   justify-content: space-around;
   padding: 8px 0;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .nav-item {
