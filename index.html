@@ -14,14 +14,19 @@
     <!-- 顶部导航 -->
     <header class="header">
       <div class="header-content">
-        <h1 class="logo">金钱结构</h1>
+        <h1 class="logo">💰 金钱结构</h1>
         <p class="slogan">把钱分好位置，而不是靠意志力存钱</p>
       </div>
     </header>
 
     <!-- 主内容区 -->
     <main class="main">
-      <!-- 状态卡片 -->
+      <!-- 🎯 今日金句卡片 -->
+      <section id="quoteSection">
+        <!-- 动态渲染 -->
+      </section>
+
+      <!-- 📊 状态卡片 -->
       <section class="card status-card" id="statusCard">
         <div class="status-icon" id="statusIcon">
           <span class="icon">?</span>
@@ -32,7 +37,12 @@
         </div>
       </section>
 
-      <!-- 结构概览 -->
+      <!-- 🎉 成就卡片（动态） -->
+      <section id="achievementSection">
+        <!-- 动态渲染 -->
+      </section>
+
+      <!-- 📈 结构概览 -->
       <section class="card">
         <div class="card-header">
           <div class="income-info">
@@ -45,8 +55,8 @@
         <div class="layers">
           <div class="layer-row">
             <div class="layer-info">
-              <span class="layer-dot" style="background: #2D2D2D"></span>
-              <span class="layer-name">储蓄层</span>
+              <span class="layer-dot" style="background: linear-gradient(135deg, #2D2D2D, #666);"></span>
+              <span class="layer-name">💰 储蓄层</span>
               <span class="layer-percent" id="savingsPercent">0%</span>
             </div>
             <span class="layer-amount" id="savingsAmount">¥0</span>
@@ -54,8 +64,8 @@
           <div class="layer-divider"></div>
           <div class="layer-row">
             <div class="layer-info">
-              <span class="layer-dot" style="background: #666666"></span>
-              <span class="layer-name">应急层</span>
+              <span class="layer-dot" style="background: linear-gradient(135deg, #666, #999);"></span>
+              <span class="layer-name">🛡️ 应急层</span>
               <span class="layer-percent" id="emergencyPercent">0%</span>
             </div>
             <span class="layer-amount" id="emergencyAmount">¥0</span>
@@ -63,8 +73,8 @@
           <div class="layer-divider"></div>
           <div class="layer-row">
             <div class="layer-info">
-              <span class="layer-dot" style="background: #22C55E"></span>
-              <span class="layer-name">生活层</span>
+              <span class="layer-dot" style="background: linear-gradient(135deg, #22C55E, #4ADE80);"></span>
+              <span class="layer-name">🎯 生活层</span>
               <span class="layer-percent" id="livingPercent">0%</span>
             </div>
             <span class="layer-amount" id="livingAmount">¥0</span>
@@ -72,9 +82,14 @@
         </div>
       </section>
 
-      <!-- 固定支出 -->
+      <!-- ☕ 有趣统计（动态） -->
+      <section id="funStatsSection" style="margin-bottom: 16px; display: none;">
+        <!-- 动态渲染 -->
+      </section>
+
+      <!-- 💸 固定支出 -->
       <section class="section">
-        <h4 class="section-title">固定支出</h4>
+        <h4 class="section-title">📝 固定支出</h4>
         <div class="card">
           <div class="expenses-header">
             <span class="expenses-total" id="expensesTotal">¥0</span>
@@ -87,9 +102,14 @@
         </div>
       </section>
 
-      <!-- 应急金进度 -->
+      <!-- 💡 小贴士卡片（动态） -->
+      <section id="tipSection" style="margin-bottom: 16px;">
+        <!-- 动态渲染 -->
+      </section>
+
+      <!-- 🛡️ 应急金进度 -->
       <section class="section" id="emergencySection" style="display: none;">
-        <h4 class="section-title">应急金</h4>
+        <h4 class="section-title">🛡️ 应急金</h4>
         <div class="card">
           <div class="expenses-header">
             <span class="expenses-total" id="emergencyBalance">¥0</span>
@@ -97,6 +117,12 @@
           </div>
           <div class="progress-ring">
             <svg viewBox="0 0 180 180" class="progress-svg">
+              <defs>
+                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#22C55E" />
+                  <stop offset="100%" style="stop-color:#16A34A" />
+                </linearGradient>
+              </defs>
               <circle cx="90" cy="90" r="82" class="progress-bg"></circle>
               <circle cx="90" cy="90" r="82" class="progress-fill" id="progressCircle"></circle>
             </svg>
@@ -122,19 +148,19 @@
     <!-- 底部导航 -->
     <nav class="bottom-nav">
       <button class="nav-item active" data-page="home" onclick="switchPage('home')">
-        <span class="nav-icon">◫</span>
+        <span class="nav-icon">🏠</span>
         <span class="nav-label">首页</span>
       </button>
       <button class="nav-item" data-page="structure" onclick="switchPage('structure')">
-        <span class="nav-icon">≡</span>
+        <span class="nav-icon">📊</span>
         <span class="nav-label">结构</span>
       </button>
       <button class="nav-item" data-page="expenses" onclick="switchPage('expenses')">
-        <span class="nav-icon">☰</span>
+        <span class="nav-icon">📝</span>
         <span class="nav-label">支出</span>
       </button>
       <button class="nav-item" data-page="profile" onclick="switchPage('profile')">
-        <span class="nav-icon">◎</span>
+        <span class="nav-icon">👤</span>
         <span class="nav-label">我的</span>
       </button>
     </nav>
