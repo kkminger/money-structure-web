@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>金钱结构</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部导航 -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="logo">金钱结构</h1>
+        <p class="slogan">把钱分好位置，而不是靠意志力存钱</p>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <!-- 状态卡片 -->
+      <section class="card status-card" id="statusCard">
+        <div class="status-icon" id="statusIcon">
+          <span class="icon">?</span>
+        </div>
+        <div class="status-content">
+          <h3 class="status-title" id="statusTitle">未设置</h3>
+          <p class="status-desc" id="statusDesc">请先完成收入分层设置</p>
+        </div>
+      </section>
+
+      <!-- 结构概览 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="income-info">
+            <span class="income-amount" id="incomeAmount">¥0</span>
+            <span class="income-label">本月收入</span>
+          </div>
+          <button class="btn-secondary" onclick="navigateTo('structure')">去分层</button>
+        </div>
+        <div class="divider"></div>
+        <div class="layers">
+          <div class="layer-row">
+            <div class="layer-info">
+              <span class="layer-dot" style="background: #2D2D2D"></span>
+              <span class="layer-name">储蓄层</span>
+              <span class="layer-percent" id="savingsPercent">0%</span>
+            </div>
+            <span class="layer-amount" id="savingsAmount">¥0</span>
+          </div>
+          <div class="layer-divider"></div>
+          <div class="layer-row">
+            <div class="layer-info">
+              <span class="layer-dot" style="background: #666666"></span>
+              <span class="layer-name">应急层</span>
+              <span class="layer-percent" id="emergencyPercent">0%</span>
+            </div>
+            <span class="layer-amount" id="emergencyAmount">¥0</span>
+          </div>
+          <div class="layer-divider"></div>
+          <div class="layer-row">
+            <div class="layer-info">
+              <span class="layer-dot" style="background: #22C55E"></span>
+              <span class="layer-name">生活层</span>
+              <span class="layer-percent" id="livingPercent">0%</span>
+            </div>
+            <span class="layer-amount" id="livingAmount">¥0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 固定支出 -->
+      <section class="section">
+        <h4 class="section-title">固定支出</h4>
+        <div class="card">
+          <div class="expenses-header">
+            <span class="expenses-total" id="expensesTotal">¥0</span>
+            <span class="expenses-percent" id="expensesPercent">0%</span>
+          </div>
+          <div class="expenses-list" id="expensesList">
+            <p class="empty-tip">暂无固定支出</p>
+          </div>
+          <button class="btn-primary btn-full" onclick="navigateTo('expenses')">去添加</button>
+        </div>
+      </section>
+
+      <!-- 应急金进度 -->
+      <section class="section" id="emergencySection" style="display: none;">
+        <h4 class="section-title">应急金</h4>
+        <div class="card">
+          <div class="expenses-header">
+            <span class="expenses-total" id="emergencyBalance">¥0</span>
+            <span class="expenses-percent" id="emergencyPercent">0%</span>
+          </div>
+          <div class="progress-ring">
+            <svg viewBox="0 0 180 180" class="progress-svg">
+              <circle cx="90" cy="90" r="82" class="progress-bg"></circle>
+              <circle cx="90" cy="90" r="82" class="progress-fill" id="progressCircle"></circle>
+            </svg>
+            <div class="progress-center">
+              <span class="progress-text" id="progressText">0%</span>
+              <span class="progress-label">目标 <span id="emergencyTarget">¥0</span></span>
+            </div>
+          </div>
+          <div class="emergency-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="monthlyExpense">¥0</span>
+              <span class="stat-label">每月基本支出</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="targetMonths">6个月</span>
+              <span class="stat-label">目标月数</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-page="home" onclick="switchPage('home')">
+        <span class="nav-icon">◫</span>
+        <span class="nav-label">首页</span>
+      </button>
+      <button class="nav-item" data-page="structure" onclick="switchPage('structure')">
+        <span class="nav-icon">≡</span>
+        <span class="nav-label">结构</span>
+      </button>
+      <button class="nav-item" data-page="expenses" onclick="switchPage('expenses')">
+        <span class="nav-icon">☰</span>
+        <span class="nav-label">支出</span>
+      </button>
+      <button class="nav-item" data-page="profile" onclick="switchPage('profile')">
+        <span class="nav-icon">◎</span>
+        <span class="nav-label">我的</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- 弹窗层 -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
