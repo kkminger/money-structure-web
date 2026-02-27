@@ -266,31 +266,6 @@ function evaluateStructure() {
     livingAmount
   };
 }
-  } else if (score >= 40) {
-    level = 'warning';
-    messages = MockeryMessages.warning;
-  } else {
-    level = 'danger';
-    messages = MockeryMessages.danger;
-  }
-
-  return {
-    score,
-    level,
-    msg: messages[Math.floor(Math.random() * messages.length)],
-    icon: level === 'excellent' ? '🏆' : level === 'good' ? '✨' : level === 'warning' ? '⚠️' : '💀',
-    // 详细信息
-    income,
-    totalFixed,
-    expensePercent: Math.round(expenseRatio * 100),
-    exceedLiving: totalFixed > livingAmount,
-    savingsRatio: layerConfig.savingsRatio,
-    emergencyRatio: layerConfig.emergencyRatio,
-    livingRatio: livingRatio,
-    savingsAndEmergencyRatio,
-    livingAmount
-  };
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎨 增强的视觉反馈
