@@ -1409,3 +1409,76 @@ body {
 .warning-text {
   color: var(--warning) !important;
 }
+
+/* 评分明细样式 */
+.score-breakdown {
+  background: var(--gray-light);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.breakdown-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.breakdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdown-item {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.breakdown-header span:first-child {
+  color: var(--secondary);
+}
+
+.breakdown-header span:last-child {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.breakdown-bar {
+  height: 6px;
+  background: var(--gray-light);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.breakdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success), #10B981);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.breakdown-item:nth-child(1) .breakdown-fill {
+  background: linear-gradient(90deg, #2D2D2D, #666666);
+}
+
+.breakdown-item:nth-child(2) .breakdown-fill {
+  background: linear-gradient(90deg, #666666, #999999);
+}
+
+.breakdown-item:nth-child(3) .breakdown-fill {
+  background: linear-gradient(90deg, #22C55E, #16A34A);
+}
+
+.breakdown-item:nth-child(4) .breakdown-fill {
+  background: linear-gradient(90deg, #F59E0B, #D97706);
+}

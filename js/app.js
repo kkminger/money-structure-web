@@ -196,50 +196,95 @@ function evaluateStructure() {
     statusReason = '结构健康';
   }
 
-  // 计算分数 - 根据状态决定基础分数
-  let score = 100;
+  // ═══════════════════════════════════════════════════════════════
+  // 综合评分系统（满分100分）
+  // 权重：储蓄层25% + 应急层20% + 生活层25% + 固定支出30%
+  // ═══════════════════════════════════════════════════════════════
 
-  // 状态决定基础分数和扣分幅度
-  if (status === 'danger') {
-    // 被挤压状态：分数直接降到 40 分以下
-    score = 20 + Math.random() * 20; // 20-40 分
-    const exceedPercent = Math.min((totalFixed / livingAmount - 1) * 30, 30);
-    score = Math.max(10, score - exceedPercent);
-  } else if (status === 'warning') {
-    // 比例过高状态：分数在 40-60 分之间
-    const ratioExcess = (savingsAndEmergencyRatio - 0.8) * 100;
-    score = 55 - ratioExcess + Math.random() * 10; // 45-65 分
+  let score = 0;
+
+  // 1️⃣ 储蓄层评分（25分满分）
+  // 优秀: 20-30% | 良好: 15-20% 或 30-35% | 及格: 10-15% 或 35-40% | 不及格: <10% 或 >40%
+  let savingsScore = 0;
+  const savingsPct = layerConfig.savingsRatio * 100;
+  if (savingsPct >= 20 && savingsPct <= 30) {
+    savingsScore = 25; // 优秀
+  } else if ((savingsPct >= 15 && savingsPct < 20) || (savingsPct > 30 && savingsPct <= 35)) {
+    savingsScore = 20; // 良好
+  } else if ((savingsPct >= 10 && savingsPct < 15) || (savingsPct > 35 && savingsPct <= 40)) {
+    savingsScore = 13; // 及格
+  } else if (savingsPct > 40) {
+    savingsScore = 5; // 过高，可能影响生活
   } else {
-    // 健康状态：根据各项指标计算分数
-    // 储蓄层得分（0-25分）
-    score -= Math.max(0, (0.2 - layerConfig.savingsRatio) * 80);
-
-    // 应急层得分（0-20分）
-    score -= Math.max(0, (0.15 - layerConfig.emergencyRatio) * 60);
-
-    // 生活空间得分（0-25分）
-    if (livingRatio < 0.3) score -= 25;
-    else if (livingRatio < 0.4) score -= 15;
-    else if (livingRatio < 0.5) score -= 5;
-
-    // 固定支出占比得分（0-20分）
-    const expenseRatio = totalFixed / income;
-    if (expenseRatio > 0.65) score -= 20;
-    else if (expenseRatio > 0.55) score -= 12;
-    else if (expenseRatio > 0.45) score -= 6;
+    savingsScore = Math.max(0, savingsPct / 2); // 不及格，按比例给分
   }
 
-  score = Math.max(0, Math.min(100, Math.round(score)));
+  // 2️⃣ 应急层评分（20分满分）
+  // 优秀: 15-20% | 良好: 10-15% 或 20-25% | 及格: 5-10% 或 25-30% | 不及格: <5% 或 >30%
+  let emergencyScore = 0;
+  const emergencyPct = layerConfig.emergencyRatio * 100;
+  if (emergencyPct >= 15 && emergencyPct <= 20) {
+    emergencyScore = 20; // 优秀
+  } else if ((emergencyPct >= 10 && emergencyPct < 15) || (emergencyPct > 20 && emergencyPct <= 25)) {
+    emergencyScore = 16; // 良好
+  } else if ((emergencyPct >= 5 && emergencyPct < 10) || (emergencyPct > 25 && emergencyPct <= 30)) {
+    emergencyScore = 10; // 及格
+  } else if (emergencyPct > 30) {
+    emergencyScore = 5; // 过高
+  } else {
+    emergencyScore = Math.max(0, emergencyPct / 5); // 不及格
+  }
+
+  // 3️⃣ 生活层评分（25分满分）
+  // 优秀: >=50% | 良好: 45-50% | 及格: 40-45% | 不及格: <40%
+  let livingScore = 0;
+  const livingPct = livingRatio * 100;
+  if (livingPct >= 50) {
+    livingScore = 25; // 优秀
+  } else if (livingPct >= 45 && livingPct < 50) {
+    livingScore = 20; // 良好
+  } else if (livingPct >= 40 && livingPct < 45) {
+    livingScore = 15; // 及格
+  } else {
+    livingScore = Math.max(0, livingPct / 2); // 不及格
+  }
+
+  // 4️⃣ 固定支出评分（30分满分）
+  // 基于固定支出占生活层的比例
+  // 优秀: <=50% | 良好: 50-60% | 及格: 60-70% | 不及格: >70%
+  let expenseScore = 0;
+  if (livingAmount > 0) {
+    const expenseLivingRatio = totalFixed / livingAmount;
+    if (expenseLivingRatio <= 0.5) {
+      expenseScore = 30; // 优秀，固定支出不挤压生活层
+    } else if (expenseLivingRatio <= 0.6) {
+      expenseScore = 24; // 良好
+    } else if (expenseLivingRatio <= 0.7) {
+      expenseScore = 18; // 及格
+    } else if (expenseLivingRatio <= 0.85) {
+      expenseScore = 10; // 警告
+    } else {
+      expenseScore = Math.max(0, 30 * (1 - expenseLivingRatio)); // 不及格
+    }
+  } else if (totalFixed > 0) {
+    expenseScore = 0; // 没有生活层但有支出，极差
+  } else {
+    expenseScore = 30; // 没有固定支出，优秀
+  }
+
+  // 计算总分
+  score = Math.round(savingsScore + emergencyScore + livingScore + expenseScore);
+  score = Math.max(0, Math.min(100, score));
 
   // 根据分数确定等级和消息
   let level, messages;
-  if (score >= 85) {
+  if (score >= 90) {
     level = 'excellent';
     messages = PraiseMessages.excellent;
-  } else if (score >= 65) {
+  } else if (score >= 70) {
     level = 'good';
     messages = PraiseMessages.good;
-  } else if (score >= 40) {
+  } else if (score >= 50) {
     level = 'warning';
     messages = MockeryMessages.warning;
   } else {
@@ -263,7 +308,20 @@ function evaluateStructure() {
     emergencyRatio: layerConfig.emergencyRatio,
     livingRatio: livingRatio,
     savingsAndEmergencyRatio,
-    livingAmount
+    livingAmount,
+    // 评分明细
+    breakdown: {
+      savingsScore: Math.round(savingsScore * 10) / 10,
+      emergencyScore: Math.round(emergencyScore * 10) / 10,
+      livingScore: Math.round(livingScore * 10) / 10,
+      expenseScore: Math.round(expenseScore * 10) / 10,
+      savingsWeight: 25,
+      emergencyWeight: 20,
+      livingWeight: 25,
+      expenseWeight: 30
+    }
+  };
+}
   };
 }
 
@@ -380,6 +438,50 @@ function showResultPopup() {
       </div>
 
       ${expenseWarning}
+
+      ${eval.breakdown ? `
+        <div class="score-breakdown">
+          <div class="breakdown-title">📊 评分明细</div>
+          <div class="breakdown-items">
+            <div class="breakdown-item">
+              <div class="breakdown-header">
+                <span>储蓄层</span>
+                <span>${eval.breakdown.savingsScore} / ${eval.breakdown.savingsWeight}</span>
+              </div>
+              <div class="breakdown-bar">
+                <div class="breakdown-fill" style="width: ${(eval.breakdown.savingsScore / eval.breakdown.savingsWeight) * 100}%"></div>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-header">
+                <span>应急层</span>
+                <span>${eval.breakdown.emergencyScore} / ${eval.breakdown.emergencyWeight}</span>
+              </div>
+              <div class="breakdown-bar">
+                <div class="breakdown-fill" style="width: ${(eval.breakdown.emergencyScore / eval.breakdown.emergencyWeight) * 100}%"></div>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-header">
+                <span>生活层</span>
+                <span>${eval.breakdown.livingScore} / ${eval.breakdown.livingWeight}</span>
+              </div>
+              <div class="breakdown-bar">
+                <div class="breakdown-fill" style="width: ${(eval.breakdown.livingScore / eval.breakdown.livingWeight) * 100}%"></div>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-header">
+                <span>固定支出</span>
+                <span>${eval.breakdown.expenseScore} / ${eval.breakdown.expenseWeight}</span>
+              </div>
+              <div class="breakdown-bar">
+                <div class="breakdown-fill" style="width: ${(eval.breakdown.expenseScore / eval.breakdown.expenseWeight) * 100}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
 
       <div class="quote-of-day">
         <span class="quote-icon">💡</span>
