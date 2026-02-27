@@ -179,20 +179,27 @@ function evaluateStructure() {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════
   // 状态判断逻辑（根据用户需求）
+  // ═══════════════════════════════════════════════════════════════
   let status;
   let statusReason = '';
+  let statusLevel = 'good'; // good, warning, danger
+
   if (totalFixed > livingAmount) {
     // IF 固定支出 > 生活层可支配 → 🔴 被挤压
     status = 'danger';
+    statusLevel = 'danger';
     statusReason = `固定支出超过生活层 ${formatCurrency(totalFixed - livingAmount)}`;
   } else if (savingsAndEmergencyRatio > 0.8) {
     // ELSE IF 储蓄比例+应急比例 > 80% → ⚠️ 过高
     status = 'warning';
+    statusLevel = 'warning';
     statusReason = `储蓄+应急比例 ${(savingsAndEmergencyRatio * 100).toFixed(0)}% 过高`;
   } else {
     // ELSE → ✅ 可执行
     status = 'good';
+    statusLevel = 'good';
     statusReason = '结构健康';
   }
 
@@ -204,73 +211,145 @@ function evaluateStructure() {
   let score = 0;
 
   // 1️⃣ 储蓄层评分（25分满分）
-  // 优秀: 20-30% | 良好: 15-20% 或 30-35% | 及格: 10-15% 或 35-40% | 不及格: <10% 或 >40%
   let savingsScore = 0;
   const savingsPct = layerConfig.savingsRatio * 100;
   if (savingsPct >= 20 && savingsPct <= 30) {
-    savingsScore = 25; // 优秀
+    savingsScore = 25;
   } else if ((savingsPct >= 15 && savingsPct < 20) || (savingsPct > 30 && savingsPct <= 35)) {
-    savingsScore = 20; // 良好
+    savingsScore = 20;
   } else if ((savingsPct >= 10 && savingsPct < 15) || (savingsPct > 35 && savingsPct <= 40)) {
-    savingsScore = 13; // 及格
+    savingsScore = 13;
   } else if (savingsPct > 40) {
-    savingsScore = 5; // 过高，可能影响生活
+    savingsScore = 5;
   } else {
-    savingsScore = Math.max(0, savingsPct / 2); // 不及格，按比例给分
+    savingsScore = Math.max(0, savingsPct / 2);
   }
 
   // 2️⃣ 应急层评分（20分满分）
-  // 优秀: 15-20% | 良好: 10-15% 或 20-25% | 及格: 5-10% 或 25-30% | 不及格: <5% 或 >30%
   let emergencyScore = 0;
   const emergencyPct = layerConfig.emergencyRatio * 100;
   if (emergencyPct >= 15 && emergencyPct <= 20) {
-    emergencyScore = 20; // 优秀
+    emergencyScore = 20;
   } else if ((emergencyPct >= 10 && emergencyPct < 15) || (emergencyPct > 20 && emergencyPct <= 25)) {
-    emergencyScore = 16; // 良好
+    emergencyScore = 16;
   } else if ((emergencyPct >= 5 && emergencyPct < 10) || (emergencyPct > 25 && emergencyPct <= 30)) {
-    emergencyScore = 10; // 及格
+    emergencyScore = 10;
   } else if (emergencyPct > 30) {
-    emergencyScore = 5; // 过高
+    emergencyScore = 5;
   } else {
-    emergencyScore = Math.max(0, emergencyPct / 5); // 不及格
+    emergencyScore = Math.max(0, emergencyPct / 5);
   }
 
   // 3️⃣ 生活层评分（25分满分）
-  // 优秀: >=50% | 良好: 45-50% | 及格: 40-45% | 不及格: <40%
   let livingScore = 0;
   const livingPct = livingRatio * 100;
   if (livingPct >= 50) {
-    livingScore = 25; // 优秀
+    livingScore = 25;
   } else if (livingPct >= 45 && livingPct < 50) {
-    livingScore = 20; // 良好
+    livingScore = 20;
   } else if (livingPct >= 40 && livingPct < 45) {
-    livingScore = 15; // 及格
+    livingScore = 15;
   } else {
-    livingScore = Math.max(0, livingPct / 2); // 不及格
+    livingScore = Math.max(0, livingPct / 2);
   }
 
-  // 4️⃣ 固定支出评分（30分满分）
-  // 基于固定支出占生活层的比例
-  // 优秀: <=50% | 良好: 50-60% | 及格: 60-70% | 不及格: >70%
+  // 4️⃣ 固定支出评分（30分满分）- 根据状态调整
   let expenseScore = 0;
   if (livingAmount > 0) {
     const expenseLivingRatio = totalFixed / livingAmount;
+
+    // 根据固定支出占生活层的比例评分
     if (expenseLivingRatio <= 0.5) {
-      expenseScore = 30; // 优秀，固定支出不挤压生活层
+      expenseScore = 30; // 优秀
     } else if (expenseLivingRatio <= 0.6) {
       expenseScore = 24; // 良好
     } else if (expenseLivingRatio <= 0.7) {
       expenseScore = 18; // 及格
     } else if (expenseLivingRatio <= 0.85) {
-      expenseScore = 10; // 警告
+      expenseScore = 10; // 警告，比例过重
+    } else if (expenseLivingRatio <= 1.0) {
+      expenseScore = 5; // 接近或达到极限
     } else {
-      expenseScore = Math.max(0, 30 * (1 - expenseLivingRatio)); // 不及格
+      expenseScore = 0; // 超过生活层
+    }
+
+    // 如果状态是被挤压，进一步降低分数
+    if (status === 'danger' && totalFixed > livingAmount) {
+      const exceedRatio = totalFixed / livingAmount;
+      const exceedPercent = (exceedRatio - 1) * 100; // 超过的百分比
+      expenseScore = Math.max(0, expenseScore - exceedPercent * 0.5);
     }
   } else if (totalFixed > 0) {
-    expenseScore = 0; // 没有生活层但有支出，极差
+    expenseScore = 0;
   } else {
-    expenseScore = 30; // 没有固定支出，优秀
+    expenseScore = 30;
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 根据状态调整最终分数
+  // ═══════════════════════════════════════════════════════════════
+
+  let finalScore = savingsScore + emergencyScore + livingScore + expenseScore;
+
+  // 状态调整
+  if (status === 'danger') {
+    // 被挤压状态：总分进一步降低
+    finalScore = Math.round(finalScore * 0.6); // 打6折
+  } else if (status === 'warning') {
+    // 过高状态：总分轻微降低
+    finalScore = Math.round(finalScore * 0.85); // 打85折
+  }
+
+  finalScore = Math.max(0, Math.min(100, finalScore));
+
+  // 根据分数确定等级和消息
+  let level, messages;
+  if (finalScore >= 90) {
+    level = 'excellent';
+    messages = PraiseMessages.excellent;
+  } else if (finalScore >= 70) {
+    level = 'good';
+    messages = PraiseMessages.good;
+  } else if (finalScore >= 50) {
+    level = 'warning';
+    messages = MockeryMessages.warning;
+  } else {
+    level = 'danger';
+    messages = MockeryMessages.danger;
+  }
+
+  return {
+    score: finalScore,
+    level,
+    status,
+    statusReason,
+    msg: messages[Math.floor(Math.random() * messages.length)],
+    icon: level === 'excellent' ? '🏆' : level === 'good' ? '✨' : level === 'warning' ? '⚠️' : '💀',
+    // 详细信息
+    income,
+    totalFixed,
+    expensePercent: Math.round((totalFixed / income) * 100),
+    exceedLiving: totalFixed > livingAmount,
+    savingsRatio: layerConfig.savingsRatio,
+    emergencyRatio: layerConfig.emergencyRatio,
+    livingRatio: livingRatio,
+    savingsAndEmergencyRatio,
+    livingAmount,
+    // 固定支出占生活层比例
+    expenseLivingRatio: livingAmount > 0 ? totalFixed / livingAmount : 0,
+    // 评分明细
+    breakdown: {
+      savingsScore: Math.round(savingsScore * 10) / 10,
+      emergencyScore: Math.round(emergencyScore * 10) / 10,
+      livingScore: Math.round(livingScore * 10) / 10,
+      expenseScore: Math.round(expenseScore * 10) / 10,
+      savingsWeight: 25,
+      emergencyWeight: 20,
+      livingWeight: 25,
+      expenseWeight: 30
+    }
+  };
+}
 
   // 计算总分
   score = Math.round(savingsScore + emergencyScore + livingScore + expenseScore);
